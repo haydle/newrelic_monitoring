@@ -17,4 +17,10 @@
 # limitations under the License.
 #
 
-default['newrelic']['license_key'] = "SET_THIS"
+default['newrelic']['license_key'] = "MUST_SET_THIS"
+
+default['newrelic']['config_dir'] = config_dir = "/etc/newrelic"
+default['newrelic']['config_file'] = "#{config_dir}/nrsysmond.cfg"
+
+# default['newrelic']['data_bag'] = nil
+# default['newrelic']['data_bag_item'] = nil

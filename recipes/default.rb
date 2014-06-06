@@ -17,24 +17,22 @@
 # limitations under the License.
 #
 
+config_file = node['newrelic']['config_file']
+license_key = node['newrelic']['license_key']
+license_key = if node.attribute?('newrelic.data_bag') && data_bag(node['newrelic']['data_bag'])
+  data_bag_item(node['newrelic']['data_bag'], node['newrelic']['data_bag_item'])
+end
+
+node.normal['newrelic']['license_key'] = license_key
+
 case node['platform']
 when 'ubuntu', 'debian'
 
-  # step 1
-  execute "apt-get-update" do
-    command "apt-get update"
-    action :nothing
+  apt_repository 'newrelic' do
+    uri 'https://apt.newrelic.com/debian/'
+    components ['newrelic', 'non-free']
   end
 
-  remote_file "/etc/apt/sources.list.d/newrelic.list" do
-    source "http://download.newrelic.com/debian/newrelic.list"
-    owner "root"
-    group "root"
-    mode 0640
-    notifies :run, "execute[apt-get-update]", :immediately
-  end
-
-  # step 2
   package "newrelic-sysmond" do
     action :upgrade
     options "--allow-unauthenticated"
@@ -42,7 +40,6 @@ when 'ubuntu', 'debian'
 
 when "redhat", "centos", "fedora"
 
-  # step 1
   repo_rpm = "http://download.newrelic.com/pub/newrelic/el5/i386/newrelic-repo-5-3.noarch.rpm"
 
   remote_file "#{Chef::Config[:file_cache_path]}/#{repo_rpm}" do
@@ -56,21 +53,19 @@ when "redhat", "centos", "fedora"
     provider Chef::Provider::Package::Rpm
   end
 
-  # step 2
   package "newrelic-sysmond" do
     action :upgrade
   end
 
 end
 
-# step 3
 execute "nrsysmond-config" do
-  command "nrsysmond-config --set license_key=#{node[:newrelic][:license_key]}"
+  command "nrsysmond-config --set license_key=#{license_key}"
   action :run
+  only_if { ::File.readlines(config_file).grep(/#{license_key}/).empty? }
 end
 
-# step 4
 service "newrelic-sysmond" do
   supports :restart => true, :status => true
-  action [:enable, :start]  
+  action [:enable, :start]
 end
