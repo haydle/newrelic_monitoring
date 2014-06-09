@@ -17,17 +17,19 @@
 # limitations under the License.
 #
 
-config_file = node['newrelic']['config_file']
-license_key = node['newrelic']['license_key']
-license_key = if node.attribute?('newrelic.data_bag') && data_bag(node['newrelic']['data_bag'])
-  data_bag_item(node['newrelic']['data_bag'], node['newrelic']['data_bag_item'])
-end
+monitor_cfg = node['newrelic']['monitor_cfg']
+dbag_name   = node['newrelic']['data_bag']['name']
+dbag_item   = node['newrelic']['data_bag']['item']
+dbag_key    = node['newrelic']['data_bag']['key']
 
-node.normal['newrelic']['license_key'] = license_key
+license_key = if dbag_name
+  Chef::EncryptedDataBagItem.load(dbag_name, dbag_item)[dbag_key]
+else
+  node['newrelic']['license_key']
+end
 
 case node['platform']
 when 'ubuntu', 'debian'
-
   apt_repository 'newrelic' do
     uri 'https://apt.newrelic.com/debian/'
     components ['newrelic', 'non-free']
@@ -37,9 +39,7 @@ when 'ubuntu', 'debian'
     action :upgrade
     options "--allow-unauthenticated"
   end
-
 when "redhat", "centos", "fedora"
-
   repo_rpm = "http://download.newrelic.com/pub/newrelic/el5/i386/newrelic-repo-5-3.noarch.rpm"
 
   remote_file "#{Chef::Config[:file_cache_path]}/#{repo_rpm}" do
@@ -56,13 +56,16 @@ when "redhat", "centos", "fedora"
   package "newrelic-sysmond" do
     action :upgrade
   end
-
 end
 
 execute "nrsysmond-config" do
   command "nrsysmond-config --set license_key=#{license_key}"
   action :run
-  only_if { ::File.readlines(config_file).grep(/#{license_key}/).empty? }
+
+  only_if do
+    !::File.exists?(monitor_cfg) ||
+      ::File.readlines(monitor_cfg).grep(/#{license_key}/).empty?
+  end
 end
 
 service "newrelic-sysmond" do

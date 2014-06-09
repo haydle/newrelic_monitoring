@@ -17,10 +17,17 @@
 # limitations under the License.
 #
 
+# Configuration location, etc.
+default['newrelic']['monitor_dir'] = monitor_dir = "/etc/newrelic"
+default['newrelic']['monitor_file'] = monitor_file = "nrsysmond.cfg"
+default['newrelic']['monitor_cfg'] = File.join(monitor_dir, monitor_file)
+
+# Encrypted data bag support by setting at least newrelic.data_bag.name
+default['newrelic']['data_bag'] = {
+                                   # 'name' => 'MUST_SET_IF_USING_DATA_BAG',
+                                   'item' => 'newrelic_license',
+                                   'key' => 'token'
+                                  }
+
+# If 'newrelic.data_bag.name' does not exist, we use this
 default['newrelic']['license_key'] = "MUST_SET_THIS"
-
-default['newrelic']['config_dir'] = config_dir = "/etc/newrelic"
-default['newrelic']['config_file'] = "#{config_dir}/nrsysmond.cfg"
-
-# default['newrelic']['data_bag'] = nil
-# default['newrelic']['data_bag_item'] = nil
