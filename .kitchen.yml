@@ -10,6 +10,9 @@ platforms:
 
 suites:
   - name: default
+    environment: 'test-kitchen'
     run_list:
       - recipe[newrelic_monitoring]
     attributes:
+      newrelic:
+        license_key: "BY_ATTRIBUTE"
